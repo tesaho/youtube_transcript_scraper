@@ -1,0 +1,15 @@
+# Scraped output
+transcripts/
+
+# Input/config files (may contain private URLs)
+*.txt
+!requirements.txt
+
+# Claude config
+.claude/
+CLAUDE.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
