@@ -11,7 +11,7 @@ URLS_FILE = "urls.txt"   # Default URLs file, e.g. "dasny2026_3.txt"
 FOLDER = None            # Output folder override (None = use channel name)
 PLAYLIST_URL = None      # Set to a playlist URL to skip the file entirely, e.g.:
                          # "https://www.youtube.com/playlist?list=PLxxx"
-DELAY = 3                # Seconds to wait between videos (increase if getting blocked)
+DELAY = 10                # Seconds to wait between videos (increase if getting blocked)
 
 
 def sanitize_name(name: str, max_len: int = 80) -> str:
@@ -60,7 +60,12 @@ def scrape(urls_file: str, playlist: str, folder: str, force: bool):
             lines = fetch_playlist_urls(playlist)
         except ScraperError as e:
             raise click.ClickException(str(e))
-        click.echo(f"Found {len(lines)} videos.\n")
+
+        folder_slug = sanitize_name(folder) if folder else "playlist"
+        urls_out = f"{folder_slug}_urls.txt"
+        with open(urls_out, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        click.echo(f"Found {len(lines)} videos → saved to {urls_out}\n")
     else:
         with open(urls_file, encoding="utf-8") as f:
             lines = [l.strip() for l in f if l.strip() and not l.strip().startswith("#")]

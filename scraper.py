@@ -2,10 +2,15 @@ import re
 from dataclasses import dataclass, field
 from urllib.parse import urlparse, parse_qs
 from typing import Optional
+from http.cookiejar import MozillaCookieJar
 
+import requests
 import yt_dlp
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
+
+
+COOKIES_FILE = "cookies.txt"  # Path to exported cookies file. Set to None to disable.
 
 
 class ScraperError(Exception):
@@ -45,7 +50,14 @@ def extract_video_id(url: str) -> str:
 
 
 def fetch_metadata(video_id: str) -> dict:
-    opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "ignore_no_formats_error": True,  # get metadata even if no format is available
+    }
+    if COOKIES_FILE:
+        opts["cookiefile"] = COOKIES_FILE
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(
@@ -66,6 +78,8 @@ def fetch_playlist_urls(playlist_url: str) -> list[str]:
         "skip_download": True,
         "extract_flat": True,  # get IDs only, no per-video metadata fetch
     }
+    if COOKIES_FILE:
+        opts["cookiefile"] = COOKIES_FILE
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(playlist_url, download=False)
@@ -86,7 +100,14 @@ def fetch_playlist_urls(playlist_url: str) -> list[str]:
 
 def fetch_transcript(video_id: str) -> tuple[str, str, bool]:
     try:
-        api = YouTubeTranscriptApi()
+        if COOKIES_FILE:
+            session = requests.Session()
+            jar = MozillaCookieJar()
+            jar.load(COOKIES_FILE, ignore_discard=True, ignore_expires=True)
+            session.cookies = jar
+            api = YouTubeTranscriptApi(http_client=session)
+        else:
+            api = YouTubeTranscriptApi()
         transcript = api.fetch(video_id)
         text = " ".join(s.text.strip() for s in transcript)
         lang = getattr(transcript, "language_code", "en")

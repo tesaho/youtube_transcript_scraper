@@ -5,6 +5,9 @@ transcripts/
 *.txt
 !requirements.txt
 
+# YouTube auth cookies (contains session tokens — never commit)
+cookies.txt
+
 # Claude config
 .claude/
 CLAUDE.md
